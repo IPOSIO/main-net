@@ -1,4 +1,4 @@
-// Copyright 2018 The go-ethereum Authors
+// Copyright 2019 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,20 +14,42 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package rawdb
+package localstore
 
-// DatabaseReader wraps the Has and Get method of a backing data store.
-type DatabaseReader interface {
-	Has(key []byte) (bool, error)
-	Get(key []byte) ([]byte, error)
-}
+import (
+	"testing"
+)
 
-// DatabaseWriter wraps the Put method of a backing data store.
-type DatabaseWriter interface {
-	Put(key []byte, value []byte) error
-}
+// TestHas validates that Hasser is returning true for
+// the stored chunk and false for one that is not stored.
+func TestHas(t *testing.T) {
+	db, cleanupFunc := newTestDB(t, nil)
+	defer cleanupFunc()
 
-// DatabaseDeleter wraps the Delete method of a backing data store.
-type DatabaseDeleter interface {
-	Delete(key []byte) error
+	chunk := generateTestRandomChunk()
+
+	err := db.NewPutter(ModePutUpload).Put(chunk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	hasser := db.NewHasser()
+
+	has, err := hasser.Has(chunk.Address())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has {
+		t.Error("chunk not found")
+	}
+
+	missingChunk := generateTestRandomChunk()
+
+	has, err = hasser.Has(missingChunk.Address())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if has {
+		t.Error("unexpected chunk is found")
+	}
 }

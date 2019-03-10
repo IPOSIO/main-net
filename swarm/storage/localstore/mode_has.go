@@ -1,4 +1,4 @@
-// Copyright 2014 The go-ethereum Authors
+// Copyright 2019 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,12 +14,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// +build js
-
-package ethdb_test
+package localstore
 
 import (
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/swarm/chunk"
 )
 
-var _ ethdb.Database = &ethdb.LDBDatabase{}
+// Hasser provides Has method to retrieve Chunks
+// from database.
+type Hasser struct {
+	db *DB
+}
+
+// NewHasser returns a new Hasser on database.
+func (db *DB) NewHasser() *Hasser {
+	return &Hasser{
+		db: db,
+	}
+}
+
+// Has returns true if the chunk is stored in database.
+func (h *Hasser) Has(addr chunk.Address) (bool, error) {
+	return h.db.retrievalDataIndex.Has(addressToItem(addr))
+}
