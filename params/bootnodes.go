@@ -21,7 +21,6 @@ package params
 var MainnetBootnodes = []string{
 	// Ethereum Foundation Go Bootnodes
 	"enode://2c80d09b7cdbfc961448117d374b0c2a3848c06e9acd5e486b9bc2e95cc3e5772d2433bb015a4eb42f047e7f852c159921fbed53a98a86695ddd5537ea555fe1@47.91.236.121:30303",
-	"enode://c24a2fbce6fbe036cf050b2f04e8ada6214c9e2776a225a79d3c9bcd7ae8b4d3e0baba9ca77e05b19bc6f7c5659483a56d2c7438c974a577925caf54564d2d15@47.244.185.21:30303",
 }
 
 // TestnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the
