@@ -47,6 +47,16 @@ import (
 )
 
 var (
+	accountReadTimer   = metrics.NewRegisteredTimer("chain/account/reads", nil)
+	accountHashTimer   = metrics.NewRegisteredTimer("chain/account/hashes", nil)
+	accountUpdateTimer = metrics.NewRegisteredTimer("chain/account/updates", nil)
+	accountCommitTimer = metrics.NewRegisteredTimer("chain/account/commits", nil)
+
+	storageReadTimer   = metrics.NewRegisteredTimer("chain/storage/reads", nil)
+	storageHashTimer   = metrics.NewRegisteredTimer("chain/storage/hashes", nil)
+	storageUpdateTimer = metrics.NewRegisteredTimer("chain/storage/updates", nil)
+	storageCommitTimer = metrics.NewRegisteredTimer("chain/storage/commits", nil)
+
 	blockInsertTimer     = metrics.NewRegisteredTimer("chain/inserts", nil)
 	blockValidationTimer = metrics.NewRegisteredTimer("chain/validation", nil)
 	blockExecutionTimer  = metrics.NewRegisteredTimer("chain/execution", nil)
@@ -291,7 +301,7 @@ func (bc *BlockChain) SetHead(head uint64) error {
 	defer bc.chainmu.Unlock()
 
 	// Rewind the header chain, deleting all block bodies until then
-	delFn := func(db ethdb.Deleter, hash common.Hash, num uint64) {
+	delFn := func(db ethdb.Writer, hash common.Hash, num uint64) {
 		rawdb.DeleteBody(db, hash, num)
 	}
 	bc.hc.SetHead(head, delFn)
@@ -800,6 +810,11 @@ func SetReceiptsData(config *params.ChainConfig, block *types.Block, receipts ty
 		// The transaction hash can be retrieved from the transaction itself
 		receipts[j].TxHash = transactions[j].Hash()
 
+		// block location fields
+		receipts[j].BlockHash = block.Hash()
+		receipts[j].BlockNumber = block.Number()
+		receipts[j].TransactionIndex = uint(j)
+
 		// The contract address can be derived from the transaction itself
 		if transactions[j].To() == nil {
 			// Deriving the signer is expensive, only do if it's actually needed
@@ -1228,31 +1243,51 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 			return it.index, events, coalescedLogs, err
 		}
 		// Process block using the parent state as reference point.
-		t0 := time.Now()
+		substart := time.Now()
 		receipts, logs, usedGas, err := bc.processor.Process(block, state, bc.vmConfig)
-		t1 := time.Now()
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
 			return it.index, events, coalescedLogs, err
 		}
+		// Update the metrics touched during block processing
+		accountReadTimer.Update(state.AccountReads)     // Account reads are complete, we can mark them
+		storageReadTimer.Update(state.StorageReads)     // Storage reads are complete, we can mark them
+		accountUpdateTimer.Update(state.AccountUpdates) // Account updates are complete, we can mark them
+		storageUpdateTimer.Update(state.StorageUpdates) // Storage updates are complete, we can mark them
+
+		triehash := state.AccountHashes + state.StorageHashes // Save to not double count in validation
+		trieproc := state.AccountReads + state.AccountUpdates
+		trieproc += state.StorageReads + state.StorageUpdates
+
+		blockExecutionTimer.Update(time.Since(substart) - trieproc - triehash)
+
 		// Validate the state using the default validator
+		substart = time.Now()
 		if err := bc.Validator().ValidateState(block, state, receipts, usedGas); err != nil {
 			bc.reportBlock(block, receipts, err)
 			return it.index, events, coalescedLogs, err
 		}
-		t2 := time.Now()
 		proctime := time.Since(start)
 
+		// Update the metrics touched during block validation
+		accountHashTimer.Update(state.AccountHashes) // Account hashes are complete, we can mark them
+		storageHashTimer.Update(state.StorageHashes) // Storage hashes are complete, we can mark them
+
+		blockValidationTimer.Update(time.Since(substart) - (state.AccountHashes + state.StorageHashes - triehash))
+
 		// Write the block to the chain and get the status.
+		substart = time.Now()
 		status, err := bc.writeBlockWithState(block, receipts, state)
-		t3 := time.Now()
 		if err != nil {
 			return it.index, events, coalescedLogs, err
 		}
+		// Update the metrics touched during block commit
+		accountCommitTimer.Update(state.AccountCommits) // Account commits are complete, we can mark them
+		storageCommitTimer.Update(state.StorageCommits) // Storage commits are complete, we can mark them
+
+		blockWriteTimer.Update(time.Since(substart) - state.AccountCommits - state.StorageCommits)
 		blockInsertTimer.UpdateSince(start)
-		blockExecutionTimer.Update(t1.Sub(t0))
-		blockValidationTimer.Update(t2.Sub(t1))
-		blockWriteTimer.Update(t3.Sub(t2))
+
 		switch status {
 		case CanonStatTy:
 			log.Debug("Inserted new block", "number", block.Number(), "hash", block.Hash(),
@@ -1274,7 +1309,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 				"root", block.Root())
 			events = append(events, ChainSideEvent{block})
 		}
-		blockInsertTimer.UpdateSince(start)
 		stats.processed++
 		stats.usedGas += usedGas
 
