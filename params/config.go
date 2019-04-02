@@ -28,6 +28,7 @@ var (
 	MainnetGenesisHash = common.HexToHash("0x0799f37695b38aa1e32f5019b51f106e36cb9f8e762d99097c4ef4318c4890cc")
 	TestnetGenesisHash = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d")
 	RinkebyGenesisHash = common.HexToHash("0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177")
+	GoerliGenesisHash  = common.HexToHash("0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")
 )
 
 var (
@@ -74,10 +75,10 @@ var (
 	// TestnetTrustedCheckpoint contains the light client trusted checkpoint for the Ropsten test network.
 	TestnetTrustedCheckpoint = &TrustedCheckpoint{
 		Name:         "testnet",
-		SectionIndex: 148,
-		SectionHead:  common.HexToHash("0x4d3181bedb6aa96a6f3efa866c71f7802400d0fb4a6906946c453630d850efc0"),
-		CHTRoot:      common.HexToHash("0x25df2f9d63a5f84b2852988f0f0f7af5a7877da061c11b85c812780b5a27a5ec"),
-		BloomRoot:    common.HexToHash("0x0584834e5222471a06c669d210e302ca602780eaaddd04634fd65471c2a91419"),
+		SectionIndex: 161,
+		SectionHead:  common.HexToHash("0x5378afa734e1feafb34bcca1534c4d96952b754579b96a4afb23d5301ecececc"),
+		CHTRoot:      common.HexToHash("0x1cf2b071e7443a62914362486b613ff30f60cea0d9c268ed8c545f876a3ee60c"),
+		BloomRoot:    common.HexToHash("0x5ac25c84bd18a9cbe878d4609a80220f57f85037a112644532412ba0d498a31b"),
 	}
 
 	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
@@ -102,10 +103,10 @@ var (
 	// RinkebyTrustedCheckpoint contains the light client trusted checkpoint for the Rinkeby test network.
 	RinkebyTrustedCheckpoint = &TrustedCheckpoint{
 		Name:         "rinkeby",
-		SectionIndex: 113,
-		SectionHead:  common.HexToHash("0xb812f3095af3af1cb2de7d7c2086ee807736a7315992c461b0986699185daf77"),
-		CHTRoot:      common.HexToHash("0x5416d0924925eb835987ad3d1f059ecc66778c51959c8246a7a35b22ec5f3109"),
-		BloomRoot:    common.HexToHash("0xcf74ca2c14e843b366561dab4fc64237bf6bb335119cbc97d723f3b501863470"),
+		SectionIndex: 125,
+		SectionHead:  common.HexToHash("0x8a738386f6bb34add15846f8f49c4c519a2f32519096e792b9f43bcb407c831c"),
+		CHTRoot:      common.HexToHash("0xa1e5720a9bad4dce794f129e4ac6744398197b652868011486a6f89c8ec84a75"),
+		BloomRoot:    common.HexToHash("0xa3048fe8b7e30f77f11bc755a88478363d7d3e71c2bdfe4e8ab9e269cd804ba2"),
 	}
 
 	// GoerliChainConfig contains the chain parameters to run a node on the Görli test network.
@@ -129,10 +130,10 @@ var (
 	// GoerliTrustedCheckpoint contains the light client trusted checkpoint for the Görli test network.
 	GoerliTrustedCheckpoint = &TrustedCheckpoint{
 		Name:         "goerli",
-		SectionIndex: 0,
-		SectionHead:  common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-		CHTRoot:      common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-		BloomRoot:    common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		SectionIndex: 9,
+		SectionHead:  common.HexToHash("0x8e223d827391eee53b07cb8ee057dbfa11c93e0b45352188c783affd7840a921"),
+		CHTRoot:      common.HexToHash("0xe0a817ac69b36c1e437c5b0cff9e764853f5115702b5f66d451b665d6afb7e78"),
+		BloomRoot:    common.HexToHash("0x50d672aeb655b723284969c7c1201fb6ca003c23ed144bcb9f2d1b30e2971c1b"),
 	}
 
 	// AllEthashProtocolChanges contains every protocol change (EIPs) introduced
