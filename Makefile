@@ -23,6 +23,9 @@ swarm:
 
 all:
 	build/env.sh go run build/ci.go install
+	@echo "Done building."
+	@rm -rf $(GOBIN)/ipos*
+	@rename 's/geth/ipos/'  $(GOBIN)/*
 
 android:
 	build/env.sh go run build/ci.go aar --local
