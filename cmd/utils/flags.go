@@ -794,7 +794,7 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 	cfg.BootstrapNodes = make([]*enode.Node, 0, len(urls))
 	for _, url := range urls {
 		if url != "" {
-			node, err := enode.ParseV4(url)
+			node, err := enode.Parse(enode.ValidSchemes, url)
 			if err != nil {
 				log.Crit("Bootstrap URL invalid", "enode", url, "err", err)
 				continue
@@ -1161,7 +1161,7 @@ func setSmartCard(ctx *cli.Context, cfg *node.Config) {
 	// Sanity check that the smartcard path is valid
 	fi, err := os.Stat(path)
 	if err != nil {
-		log.Error("Failed to verify smartcard daemon path", "path", path, "err", err)
+		log.Info("Smartcard socket not found, disabling", "err", err)
 		return
 	}
 	if fi.Mode()&os.ModeType != os.ModeSocket {
