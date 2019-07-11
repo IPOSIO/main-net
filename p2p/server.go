@@ -286,6 +286,11 @@ func (c *conn) set(f connFlag, val bool) {
 	}
 }
 
+// LocalNode returns the local node record.
+func (srv *Server) LocalNode() *enode.LocalNode {
+	return srv.localnode
+}
+
 // Peers returns all connected peers.
 func (srv *Server) Peers() []*Peer {
 	var ps []*Peer
@@ -488,7 +493,6 @@ func (srv *Server) setupLocalNode() error {
 	srv.nodedb = db
 	srv.localnode = enode.NewLocalNode(db, srv.PrivateKey)
 	srv.localnode.SetFallbackIP(net.IP{127, 0, 0, 1})
-	srv.localnode.Set(capsByNameAndVersion(srv.ourHandshake.Caps))
 	// TODO: check conflicts
 	for _, p := range srv.Protocols {
 		for _, e := range p.Attributes {
