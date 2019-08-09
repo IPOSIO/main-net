@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -85,6 +86,7 @@ type BlockChain interface {
 
 type txPool interface {
 	AddRemotes(txs []*types.Transaction) []error
+	AddRemotesSync(txs []*types.Transaction) []error
 	Status(hashes []common.Hash) []core.TxStatus
 }
 
@@ -125,6 +127,9 @@ type ProtocolManager struct {
 
 	// Callbacks
 	synced func() bool
+
+	// Testing fields
+	addTxsSync bool
 }
 
 // NewProtocolManager returns a new ethereum sub protocol manager. The Ethereum sub protocol manages peers capable
@@ -300,8 +305,14 @@ func (pm *ProtocolManager) handle(p *peer) error {
 		p.Log().Error("Light Ethereum peer registration failed", "err", err)
 		return err
 	}
+	if !pm.client && p.balanceTracker == nil {
+		// add dummy balance tracker for tests
+		p.balanceTracker = &balanceTracker{}
+		p.balanceTracker.init(&mclock.System{}, 1)
+	}
 	connectedAt := time.Now()
 	defer func() {
+		p.balanceTracker = nil
 		pm.removePeer(p.id)
 		connectionTimer.UpdateSince(connectedAt)
 	}()
@@ -396,6 +407,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 	defer msg.Discard()
 
 	var deliverMsg *Msg
+	balanceTracker := p.balanceTracker
 
 	sendResponse := func(reqID, amount uint64, reply *reply, servingTime uint64) {
 		p.responseLock.Lock()
@@ -414,6 +426,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			realCost = pm.server.costTracker.realCost(servingTime, msg.Size, replySize)
 			if amount != 0 {
 				pm.server.costTracker.updateStats(msg.Code, amount, servingTime, realCost)
+				balanceTracker.requestCost(realCost)
 			}
 		} else {
 			realCost = maxCost
@@ -1044,7 +1057,12 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 					hash := tx.Hash()
 					stats[i] = pm.txStatus(hash)
 					if stats[i].Status == core.TxStatusUnknown {
-						if errs := pm.txpool.AddRemotes([]*types.Transaction{tx}); errs[0] != nil {
+						addFn := pm.txpool.AddRemotes
+						// Add txs synchronously for testing purpose
+						if pm.addTxsSync {
+							addFn = pm.txpool.AddRemotesSync
+						}
+						if errs := addFn([]*types.Transaction{tx}); errs[0] != nil {
 							stats[i].Error = errs[0].Error()
 							continue
 						}

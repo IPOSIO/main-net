@@ -192,7 +192,9 @@ func newTestProtocolManager(lightSync bool, blocks int, odr *LesOdr, indexers []
 		chain, _ = light.NewLightChain(odr, gspec.Config, engine, nil)
 	} else {
 		chain = simulation.Blockchain()
-		pool = core.NewTxPool(core.DefaultTxPoolConfig, gspec.Config, simulation.Blockchain())
+		config := core.DefaultTxPoolConfig
+		config.Journal = ""
+		pool = core.NewTxPool(config, gspec.Config, simulation.Blockchain())
 	}
 
 	// Create contract registrar
@@ -420,6 +422,7 @@ func newServerEnv(t *testing.T, blocks int, protocol int, waitIndexers func(*cor
 			// Note bloom trie indexer will be closed by it parent recursively.
 			cIndexer.Close()
 			bIndexer.Close()
+			b.Close()
 		}
 }
 
@@ -501,5 +504,7 @@ func newClientServerEnv(t *testing.T, blocks int, protocol int, waitIndexers fun
 			bIndexer.Close()
 			lcIndexer.Close()
 			lbIndexer.Close()
+			b.Close()
+			lb.Close()
 		}
 }
